@@ -265,6 +265,45 @@
             font-size: 0.9em;
         }
 
+        .handled-section {
+            margin-top: 25px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+
+        .handled-section h3 {
+            margin: 0 0 12px 0;
+            font-size: 1em;
+            color: #28a745;
+        }
+
+        .handled-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            background: #f0fff0;
+            border-radius: 6px;
+            border-left: 4px solid #28a745;
+            font-size: 0.9em;
+        }
+
+        .handled-item .checkmark {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .handled-item .details {
+            flex: 1;
+            color: #555;
+        }
+
+        .handled-item .amount {
+            font-weight: 600;
+            color: #28a745;
+        }
+
         .empty-state {
             text-align: center;
             color: #888;
@@ -484,10 +523,18 @@ Respond in JSON format with this structure:
             "date": "date of transaction or null"
         }
     ],
+    "handled": [
+        {
+            "transaction": "Description of the transaction",
+            "claim": "The matching claim",
+            "amount": "$XX.XX",
+            "date": "date"
+        }
+    ],
     "summary": "A brief 1-2 sentence summary of findings"
 }
 
-Focus on actionable items. If a transaction clearly matches a submitted claim, don't suggest it again. Be helpful and specific.`;
+Include all transactions that clearly match submitted claims in the "handled" array. Be helpful and specific.`;
         }
 
         async function callLLM(prompt) {
@@ -584,42 +631,69 @@ Focus on actionable items. If a transaction clearly matches a submitted claim, d
 
         function renderActions(data) {
             const output = document.getElementById('output');
+            const hasActions = data.actions && data.actions.length > 0;
+            const hasHandled = data.handled && data.handled.length > 0;
 
-            if (!data.actions || data.actions.length === 0) {
+            if (!hasActions && !hasHandled) {
                 output.innerHTML = `
-                    <div class="empty-state">No missing claims found! You're all caught up.</div>
+                    <div class="empty-state">No pet-related transactions found.</div>
                     ${data.summary ? `<div class="summary">${data.summary}</div>` : ''}
                 `;
                 return;
             }
 
-            const actionsHtml = data.actions.map((action, i) => `
-                <div class="action-item" id="action-${i}">
-                    <div class="action-checkboxes">
-                        <label>
-                            <input type="checkbox" id="done-${i}" onchange="toggleAction(${i}, 'done')">
-                            Done
-                        </label>
-                        <label>
-                            <input type="checkbox" id="irrelevant-${i}" onchange="toggleAction(${i}, 'irrelevant')">
-                            Irrelevant
-                        </label>
-                    </div>
-                    <div class="action-content">
-                        <strong>${action.description}</strong>
-                        ${action.amount ? ` - ${action.amount}` : ''}
-                        ${action.date ? ` (${action.date})` : ''}
-                        <br>
-                        <small style="color: #666">${action.details || ''}</small>
-                    </div>
-                    <span class="priority ${action.priority || 'medium'}">${action.priority || 'medium'}</span>
-                </div>
-            `).join('');
+            let html = '';
 
-            output.innerHTML = `
-                ${actionsHtml}
-                ${data.summary ? `<div class="summary"><strong>Summary:</strong> ${data.summary}</div>` : ''}
-            `;
+            if (hasActions) {
+                html += data.actions.map((action, i) => `
+                    <div class="action-item" id="action-${i}">
+                        <div class="action-checkboxes">
+                            <label>
+                                <input type="checkbox" id="done-${i}" onchange="toggleAction(${i}, 'done')">
+                                Done
+                            </label>
+                            <label>
+                                <input type="checkbox" id="irrelevant-${i}" onchange="toggleAction(${i}, 'irrelevant')">
+                                Irrelevant
+                            </label>
+                        </div>
+                        <div class="action-content">
+                            <strong>${action.description}</strong>
+                            ${action.amount ? ` - ${action.amount}` : ''}
+                            ${action.date ? ` (${action.date})` : ''}
+                            <br>
+                            <small style="color: #666">${action.details || ''}</small>
+                        </div>
+                        <span class="priority ${action.priority || 'medium'}">${action.priority || 'medium'}</span>
+                    </div>
+                `).join('');
+            } else {
+                html += '<div class="empty-state">No missing claims found! You\'re all caught up.</div>';
+            }
+
+            if (data.summary) {
+                html += `<div class="summary"><strong>Summary:</strong> ${data.summary}</div>`;
+            }
+
+            if (hasHandled) {
+                html += `
+                    <div class="handled-section">
+                        <h3>Correctly Handled</h3>
+                        ${data.handled.map(item => `
+                            <div class="handled-item">
+                                <span class="checkmark">✓</span>
+                                <span class="details">
+                                    ${item.transaction}
+                                    ${item.claim ? ` → ${item.claim}` : ''}
+                                </span>
+                                ${item.amount ? `<span class="amount">${item.amount}</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            output.innerHTML = html;
         }
 
         function toggleAction(index, type) {
@@ -661,16 +735,21 @@ Focus on actionable items. If a transaction clearly matches a submitted claim, d
                         priority: "medium",
                         amount: "$45.99",
                         date: "02/10/2025"
-                    },
-                    {
-                        description: "Follow up on pending emergency visit claim",
-                        details: "Your $890 emergency vet claim from 02/03/2025 is still marked as pending. Consider calling to check status.",
-                        priority: "low",
-                        amount: "$890.00",
-                        date: "02/03/2025"
                     }
                 ],
-                summary: "Found 3 potential missing claims totaling $425.49, plus 1 pending claim to follow up on."
+                handled: [
+                    {
+                        transaction: "VET CLINIC PAWSOME - 01/15/2025",
+                        claim: "Claim #1234 - Annual checkup (Approved)",
+                        amount: "$245.00"
+                    },
+                    {
+                        transaction: "EMERGENCY VET SVC - 02/03/2025",
+                        claim: "Claim #1235 - Emergency visit (Pending)",
+                        amount: "$890.00"
+                    }
+                ],
+                summary: "Found 3 potential missing claims totaling $425.49. 2 transactions already have matching claims."
             };
             renderActions(exampleData);
         }
