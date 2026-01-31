@@ -310,6 +310,28 @@
             padding: 30px;
         }
 
+        .export-buttons {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .export-buttons button {
+            padding: 8px 16px;
+            font-size: 13px;
+            background: #6c757d;
+        }
+
+        .export-buttons button:hover {
+            background: #5a6268;
+        }
+
+        .export-buttons button.copied {
+            background: #28a745;
+        }
+
         footer {
             margin-top: 30px;
             text-align: center;
@@ -629,7 +651,11 @@ Include all transactions that clearly match submitted claims in the "handled" ar
             }
         }
 
+        // Store last analysis for export
+        let lastAnalysis = null;
+
         function renderActions(data) {
+            lastAnalysis = data;
             const output = document.getElementById('output');
             const hasActions = data.actions && data.actions.length > 0;
             const hasHandled = data.handled && data.handled.length > 0;
@@ -693,6 +719,14 @@ Include all transactions that clearly match submitted claims in the "handled" ar
                 `;
             }
 
+            // Add export buttons
+            html += `
+                <div class="export-buttons">
+                    <button onclick="copyCSV(this)">Copy CSV</button>
+                    <button onclick="copySheets(this)">Copy for Sheets</button>
+                </div>
+            `;
+
             output.innerHTML = html;
         }
 
@@ -710,6 +744,104 @@ Include all transactions that clearly match submitted claims in the "handled" ar
 
             actionDiv.classList.toggle('done', doneCheckbox.checked);
             actionDiv.classList.toggle('irrelevant', irrelevantCheckbox.checked);
+        }
+
+        function escapeCSV(str) {
+            if (!str) return '';
+            str = String(str);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        }
+
+        function copyCSV(btn) {
+            if (!lastAnalysis) return;
+
+            const rows = [['Status', 'Date', 'Description', 'Amount', 'Priority', 'Details']];
+
+            if (lastAnalysis.actions) {
+                lastAnalysis.actions.forEach(a => {
+                    rows.push([
+                        'Action Needed',
+                        escapeCSV(a.date || ''),
+                        escapeCSV(a.description),
+                        escapeCSV(a.amount || ''),
+                        escapeCSV(a.priority || 'medium'),
+                        escapeCSV(a.details || '')
+                    ]);
+                });
+            }
+
+            if (lastAnalysis.handled) {
+                lastAnalysis.handled.forEach(h => {
+                    rows.push([
+                        'Handled',
+                        escapeCSV(h.date || ''),
+                        escapeCSV(h.transaction),
+                        escapeCSV(h.amount || ''),
+                        '',
+                        escapeCSV(h.claim || '')
+                    ]);
+                });
+            }
+
+            const csv = rows.map(r => r.join(',')).join('\n');
+            copyToClipboard(csv, btn);
+        }
+
+        function copySheets(btn) {
+            if (!lastAnalysis) return;
+
+            const transactions = document.getElementById('transactions').value;
+            const claims = document.getElementById('claims').value;
+
+            let output = '';
+
+            // Metadata section
+            output += '=== METADATA ===\n\n';
+            output += 'Timestamp\t' + new Date().toISOString() + '\n';
+            output += 'Model\t' + settings.model + '\n';
+            output += 'Provider\t' + settings.provider + '\n\n';
+
+            output += '--- Raw Transactions ---\n';
+            output += transactions + '\n\n';
+
+            output += '--- Raw Claims ---\n';
+            output += claims + '\n\n';
+
+            output += '--- Summary ---\n';
+            output += (lastAnalysis.summary || 'No summary') + '\n\n';
+
+            // Data section
+            output += '=== DATA ===\n\n';
+            output += 'Status\tDate\tDescription\tAmount\tPriority\tDetails\n';
+
+            if (lastAnalysis.actions) {
+                lastAnalysis.actions.forEach(a => {
+                    output += `Action Needed\t${a.date || ''}\t${a.description}\t${a.amount || ''}\t${a.priority || 'medium'}\t${a.details || ''}\n`;
+                });
+            }
+
+            if (lastAnalysis.handled) {
+                lastAnalysis.handled.forEach(h => {
+                    output += `Handled\t${h.date || ''}\t${h.transaction}\t${h.amount || ''}\t\t${h.claim || ''}\n`;
+                });
+            }
+
+            copyToClipboard(output, btn);
+        }
+
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
         }
 
         function showExample() {
