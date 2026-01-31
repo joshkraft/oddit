@@ -338,6 +338,7 @@ Claim #1235 - 02/03/2025 - Emergency visit - $890 - Pending
 
     <div class="actions">
         <button id="analyzeBtn" onclick="analyze()">Analyze for Missing Claims</button>
+        <button onclick="showExample()" style="background: #6c757d;">Example Output</button>
     </div>
 
     <div class="output-section">
@@ -635,6 +636,43 @@ Focus on actionable items. If a transaction clearly matches a submitted claim, d
 
             actionDiv.classList.toggle('done', doneCheckbox.checked);
             actionDiv.classList.toggle('irrelevant', irrelevantCheckbox.checked);
+        }
+
+        function showExample() {
+            const exampleData = {
+                actions: [
+                    {
+                        description: "Submit claim for Petco Pharmacy purchase",
+                        details: "This $67.50 transaction on 01/22/2025 appears to be for pet medication and hasn't been submitted yet.",
+                        priority: "high",
+                        amount: "$67.50",
+                        date: "01/22/2025"
+                    },
+                    {
+                        description: "Verify Blue Cross Animal Hospital charge",
+                        details: "Found a $312.00 charge on 01/28/2025 that doesn't match any submitted claims. Could be a routine checkup or treatment.",
+                        priority: "high",
+                        amount: "$312.00",
+                        date: "01/28/2025"
+                    },
+                    {
+                        description: "Check if PetSmart purchase is claimable",
+                        details: "The $45.99 purchase might include prescription food or supplies that could be covered under your policy.",
+                        priority: "medium",
+                        amount: "$45.99",
+                        date: "02/10/2025"
+                    },
+                    {
+                        description: "Follow up on pending emergency visit claim",
+                        details: "Your $890 emergency vet claim from 02/03/2025 is still marked as pending. Consider calling to check status.",
+                        priority: "low",
+                        amount: "$890.00",
+                        date: "02/03/2025"
+                    }
+                ],
+                summary: "Found 3 potential missing claims totaling $425.49, plus 1 pending claim to follow up on."
+            };
+            renderActions(exampleData);
         }
     </script>
 </body>
