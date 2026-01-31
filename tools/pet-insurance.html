@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>oddit - Pet Insurance Auditor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        h1 {
+            margin-bottom: 0.25em;
+        }
+
+        .tagline {
+            color: #666;
+            margin-bottom: 1.5em;
+            font-style: italic;
+        }
+
+        .settings {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .settings summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .settings-content {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .setting-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .setting-group input,
+        .setting-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 700px) {
+            .input-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-box {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .input-box h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+            color: #444;
+        }
+
+        .input-box p {
+            margin: 0 0 10px 0;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+        }
+
+        .actions {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .output-section {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 150px;
+        }
+
+        .output-section h2 {
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+            color: #444;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .loading::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .action-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+
+        .action-item.done {
+            opacity: 0.6;
+            border-left-color: #28a745;
+            background: #f0fff0;
+        }
+
+        .action-item.irrelevant {
+            opacity: 0.4;
+            border-left-color: #6c757d;
+            background: #f0f0f0;
+            text-decoration: line-through;
+        }
+
+        .action-checkboxes {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 90px;
+        }
+
+        .action-checkboxes label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8em;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .action-checkboxes input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        .action-content {
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .action-item .priority {
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .priority.high {
+            background: #ffe0e0;
+            color: #c00;
+        }
+
+        .priority.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .priority.low {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #888;
+            padding: 30px;
+        }
+
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        footer a {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <p style="margin-bottom: 5px;"><a href="../index.html" style="color: #007bff; text-decoration: none;">&larr; oddit</a></p>
+    <h1 style="margin-top: 0;">Pet Insurance Auditor</h1>
+    <p class="tagline">Find expenses you forgot to submit as claims.</p>
+
+    <details class="settings" id="settings">
+        <summary>Settings</summary>
+        <div class="settings-content">
+            <div class="setting-group">
+                <label for="provider">LLM Provider</label>
+                <select id="provider">
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="openai">OpenAI (GPT)</option>
+                    <option value="google">Google (Gemini)</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label for="apiKey">API Key</label>
+                <input type="password" id="apiKey" placeholder="sk-... or sk-ant-...">
+            </div>
+            <div class="setting-group">
+                <label for="model">Model</label>
+                <select id="model">
+                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                    <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="gpt-4o-mini">GPT-4o Mini</option>
+                </select>
+            </div>
+        </div>
+    </details>
+
+    <div class="input-section">
+        <div class="input-box">
+            <h2>Bank Transactions</h2>
+            <p>Paste your bank/card transactions that might be pet-related expenses (vet visits, medications, etc.)</p>
+            <textarea id="transactions" placeholder="Example:
+01/15/2025  VET CLINIC PAWSOME    $245.00
+01/22/2025  PETCO PHARMACY        $67.50
+02/03/2025  EMERGENCY VET SVC     $890.00
+..."></textarea>
+        </div>
+
+        <div class="input-box">
+            <h2>Submitted Claims</h2>
+            <p>Paste the claims you've already submitted to your pet insurance</p>
+            <textarea id="claims" placeholder="Example:
+Claim #1234 - 01/15/2025 - Annual checkup - $245 - Approved
+Claim #1235 - 02/03/2025 - Emergency visit - $890 - Pending
+..."></textarea>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button id="analyzeBtn" onclick="analyze()">Analyze for Missing Claims</button>
+    </div>
+
+    <div class="output-section">
+        <h2>Suggested Actions</h2>
+        <div id="output">
+            <div class="empty-state">
+                Paste your transactions and claims above, then click "Analyze" to find missing submissions.
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>oddit - Copy, paste, audit. | <a href="https://github.com/simonw/tools" target="_blank">Inspired by Simon Willison's HTML tools</a></p>
+    </footer>
+
+    <script>
+        // Load settings from localStorage
+        const settings = {
+            provider: localStorage.getItem('oddit_provider') || 'anthropic',
+            apiKey: localStorage.getItem('oddit_apiKey') || '',
+            model: localStorage.getItem('oddit_model') || 'claude-sonnet-4-20250514'
+        };
+
+        // Initialize UI with saved settings
+        document.getElementById('provider').value = settings.provider;
+        document.getElementById('apiKey').value = settings.apiKey;
+        document.getElementById('model').value = settings.model;
+        updateModelOptions();
+
+        // If no API key, open settings
+        if (!settings.apiKey) {
+            document.getElementById('settings').open = true;
+        }
+
+        // Save settings on change
+        document.getElementById('provider').addEventListener('change', (e) => {
+            settings.provider = e.target.value;
+            localStorage.setItem('oddit_provider', settings.provider);
+            updateModelOptions();
+        });
+
+        document.getElementById('apiKey').addEventListener('input', (e) => {
+            settings.apiKey = e.target.value;
+            localStorage.setItem('oddit_apiKey', settings.apiKey);
+        });
+
+        document.getElementById('model').addEventListener('change', (e) => {
+            settings.model = e.target.value;
+            localStorage.setItem('oddit_model', settings.model);
+        });
+
+        function updateModelOptions() {
+            const modelSelect = document.getElementById('model');
+            const provider = document.getElementById('provider').value;
+
+            const models = {
+                anthropic: [
+                    { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+                    { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' }
+                ],
+                openai: [
+                    { value: 'gpt-4o', label: 'GPT-4o' },
+                    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' }
+                ],
+                google: [
+                    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+                    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }
+                ]
+            };
+
+            modelSelect.innerHTML = models[provider]
+                .map(m => `<option value="${m.value}">${m.label}</option>`)
+                .join('');
+
+            // Try to restore saved model or use first option
+            const savedModel = localStorage.getItem('oddit_model');
+            if (savedModel && models[provider].some(m => m.value === savedModel)) {
+                modelSelect.value = savedModel;
+            }
+            settings.model = modelSelect.value;
+        }
+
+        async function analyze() {
+            const transactions = document.getElementById('transactions').value.trim();
+            const claims = document.getElementById('claims').value.trim();
+            const output = document.getElementById('output');
+            const btn = document.getElementById('analyzeBtn');
+
+            if (!settings.apiKey) {
+                output.innerHTML = '<div class="error">Please enter your API key in Settings above.</div>';
+                document.getElementById('settings').open = true;
+                return;
+            }
+
+            if (!transactions) {
+                output.innerHTML = '<div class="error">Please paste your bank transactions.</div>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+            output.innerHTML = '<div class="loading">Analyzing your transactions</div>';
+
+            const prompt = buildPrompt(transactions, claims);
+
+            try {
+                const response = await callLLM(prompt);
+                const actions = parseResponse(response);
+                renderActions(actions);
+            } catch (error) {
+                output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Analyze for Missing Claims';
+            }
+        }
+
+        function buildPrompt(transactions, claims) {
+            return `You are a helpful assistant that audits pet insurance claims.
+
+The user has provided their bank/card transactions and the claims they've already submitted to their pet insurance.
+
+Your task:
+1. Identify transactions that look like pet-related expenses (vet visits, pet medications, pet supplies that might be covered, emergency vet services, etc.)
+2. Compare them against submitted claims
+3. Identify any expenses that haven't been submitted as claims yet
+4. Suggest actions the user should take
+
+TRANSACTIONS:
+${transactions || '(No transactions provided)'}
+
+SUBMITTED CLAIMS:
+${claims || '(No claims provided - assume nothing has been submitted)'}
+
+Respond in JSON format with this structure:
+{
+    "actions": [
+        {
+            "description": "Brief description of the action to take",
+            "details": "More detailed explanation",
+            "priority": "high|medium|low",
+            "amount": "$XX.XX or null if unknown",
+            "date": "date of transaction or null"
+        }
+    ],
+    "summary": "A brief 1-2 sentence summary of findings"
+}
+
+Focus on actionable items. If a transaction clearly matches a submitted claim, don't suggest it again. Be helpful and specific.`;
+        }
+
+        async function callLLM(prompt) {
+            if (settings.provider === 'anthropic') {
+                return callAnthropic(prompt);
+            } else if (settings.provider === 'google') {
+                return callGemini(prompt);
+            } else {
+                return callOpenAI(prompt);
+            }
+        }
+
+        async function callAnthropic(prompt) {
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': settings.apiKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-dangerous-direct-browser-access': 'true'
+                },
+                body: JSON.stringify({
+                    model: settings.model,
+                    max_tokens: 2048,
+                    messages: [{ role: 'user', content: prompt }]
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error?.message || `API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.content[0].text;
+        }
+
+        async function callOpenAI(prompt) {
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${settings.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: settings.model,
+                    messages: [{ role: 'user', content: prompt }],
+                    max_tokens: 2048
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error?.message || `API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        async function callGemini(prompt) {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent?key=${settings.apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error?.message || `API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        function parseResponse(response) {
+            // Try to extract JSON from the response
+            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                return { actions: [], summary: 'Could not parse response. Raw: ' + response.substring(0, 200) };
+            }
+
+            try {
+                return JSON.parse(jsonMatch[0]);
+            } catch (e) {
+                return { actions: [], summary: 'Could not parse JSON response.' };
+            }
+        }
+
+        function renderActions(data) {
+            const output = document.getElementById('output');
+
+            if (!data.actions || data.actions.length === 0) {
+                output.innerHTML = `
+                    <div class="empty-state">No missing claims found! You're all caught up.</div>
+                    ${data.summary ? `<div class="summary">${data.summary}</div>` : ''}
+                `;
+                return;
+            }
+
+            const actionsHtml = data.actions.map((action, i) => `
+                <div class="action-item" id="action-${i}">
+                    <div class="action-checkboxes">
+                        <label>
+                            <input type="checkbox" id="done-${i}" onchange="toggleAction(${i}, 'done')">
+                            Done
+                        </label>
+                        <label>
+                            <input type="checkbox" id="irrelevant-${i}" onchange="toggleAction(${i}, 'irrelevant')">
+                            Irrelevant
+                        </label>
+                    </div>
+                    <div class="action-content">
+                        <strong>${action.description}</strong>
+                        ${action.amount ? ` - ${action.amount}` : ''}
+                        ${action.date ? ` (${action.date})` : ''}
+                        <br>
+                        <small style="color: #666">${action.details || ''}</small>
+                    </div>
+                    <span class="priority ${action.priority || 'medium'}">${action.priority || 'medium'}</span>
+                </div>
+            `).join('');
+
+            output.innerHTML = `
+                ${actionsHtml}
+                ${data.summary ? `<div class="summary"><strong>Summary:</strong> ${data.summary}</div>` : ''}
+            `;
+        }
+
+        function toggleAction(index, type) {
+            const actionDiv = document.getElementById(`action-${index}`);
+            const doneCheckbox = document.getElementById(`done-${index}`);
+            const irrelevantCheckbox = document.getElementById(`irrelevant-${index}`);
+
+            // Uncheck the other checkbox when one is checked
+            if (type === 'done' && doneCheckbox.checked) {
+                irrelevantCheckbox.checked = false;
+            } else if (type === 'irrelevant' && irrelevantCheckbox.checked) {
+                doneCheckbox.checked = false;
+            }
+
+            actionDiv.classList.toggle('done', doneCheckbox.checked);
+            actionDiv.classList.toggle('irrelevant', irrelevantCheckbox.checked);
+        }
+    </script>
+</body>
+</html>
