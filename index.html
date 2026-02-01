@@ -81,14 +81,77 @@
         }
 
         footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #888;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 12px 20px;
             font-size: 0.85em;
+            z-index: 100;
         }
 
-        footer a {
-            color: #007bff;
+        .footer-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .footer-content label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #a0aec0;
+            font-size: 0.9em;
+        }
+
+        .footer-content select,
+        .footer-content input {
+            padding: 5px 8px;
+            border: 1px solid #4a5568;
+            border-radius: 4px;
+            background: #1a202c;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+
+        .footer-content input[type="password"] {
+            width: 140px;
+        }
+
+        .footer-content input[type="text"]#customModel {
+            width: 180px;
+        }
+
+        .footer-content select:focus,
+        .footer-content input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .footer-spacer {
+            flex: 1;
+        }
+
+        .footer-content a {
+            color: #63b3ed;
+        }
+
+        .custom-model-wrapper {
+            display: none;
+        }
+
+        .custom-model-wrapper.show {
+            display: flex;
+        }
+
+        /* Add padding to body so content isn't hidden behind fixed footer */
+        body {
+            padding-bottom: 80px;
         }
     </style>
 </head>
@@ -121,7 +184,107 @@
     </div>
 
     <footer>
-        <p>oddit - Copy, paste, audit. | <a href="https://github.com/simonw/tools" target="_blank">Inspired by Simon Willison's HTML tools</a></p>
+        <div class="footer-content">
+            <label>
+                Provider
+                <select id="provider">
+                    <option value="anthropic">Anthropic</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="google">Google</option>
+                </select>
+            </label>
+            <label>
+                Model
+                <select id="model">
+                    <option value="claude-opus-4-5-20250514">Opus 4.5</option>
+                    <option value="claude-sonnet-4-20250514">Sonnet 4</option>
+                </select>
+            </label>
+            <label class="custom-model-wrapper" id="customModelWrapper">
+                Custom
+                <input type="text" id="customModel" placeholder="model-name">
+            </label>
+            <label>
+                API Key
+                <input type="password" id="apiKey" placeholder="sk-...">
+            </label>
+            <span class="footer-spacer"></span>
+            <a href="https://github.com/simonw/tools" target="_blank">Inspired by Simon's tools</a>
+        </div>
     </footer>
+
+    <script>
+        const models = {
+            anthropic: [
+                { value: 'claude-opus-4-5-20250514', label: 'Opus 4.5' },
+                { value: 'claude-sonnet-4-20250514', label: 'Sonnet 4' },
+                { value: 'custom', label: 'Custom...' }
+            ],
+            openai: [
+                { value: 'gpt-4o', label: 'GPT-4o' },
+                { value: 'o1', label: 'o1' },
+                { value: 'custom', label: 'Custom...' }
+            ],
+            google: [
+                { value: 'gemini-2.5-pro-preview-05-06', label: 'Gemini 2.5 Pro' },
+                { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+                { value: 'custom', label: 'Custom...' }
+            ]
+        };
+
+        // Load settings
+        const settings = {
+            provider: localStorage.getItem('oddit_provider') || 'anthropic',
+            model: localStorage.getItem('oddit_model') || 'claude-opus-4-5-20250514',
+            customModel: localStorage.getItem('oddit_customModel') || '',
+            apiKey: localStorage.getItem('oddit_apiKey') || ''
+        };
+
+        // Initialize UI
+        document.getElementById('provider').value = settings.provider;
+        document.getElementById('apiKey').value = settings.apiKey;
+        document.getElementById('customModel').value = settings.customModel;
+        updateModelOptions();
+
+        function updateModelOptions() {
+            const modelSelect = document.getElementById('model');
+            const provider = document.getElementById('provider').value;
+            const customWrapper = document.getElementById('customModelWrapper');
+
+            modelSelect.innerHTML = models[provider]
+                .map(m => `<option value="${m.value}">${m.label}</option>`)
+                .join('');
+
+            // Restore saved model if it exists for this provider
+            if (models[provider].some(m => m.value === settings.model)) {
+                modelSelect.value = settings.model;
+            }
+
+            // Show/hide custom input
+            customWrapper.classList.toggle('show', modelSelect.value === 'custom');
+        }
+
+        document.getElementById('provider').addEventListener('change', (e) => {
+            settings.provider = e.target.value;
+            localStorage.setItem('oddit_provider', settings.provider);
+            updateModelOptions();
+        });
+
+        document.getElementById('model').addEventListener('change', (e) => {
+            settings.model = e.target.value;
+            localStorage.setItem('oddit_model', settings.model);
+            document.getElementById('customModelWrapper').classList.toggle('show', e.target.value === 'custom');
+        });
+
+        document.getElementById('customModel').addEventListener('input', (e) => {
+            settings.customModel = e.target.value;
+            localStorage.setItem('oddit_customModel', settings.customModel);
+        });
+
+        document.getElementById('apiKey').addEventListener('input', (e) => {
+            settings.apiKey = e.target.value;
+            localStorage.setItem('oddit_apiKey', settings.apiKey);
+        });
+    </script>
 </body>
 </html>
