@@ -15,6 +15,9 @@ Inspired by [Simon Willison's HTML tools](https://github.com/simonw/tools).
 ### Pet Insurance Auditor (`tools/pet-insurance.html`)
 Compare bank transactions against submitted pet insurance claims. Find expenses you forgot to file.
 
+### Subscription Auditor (`tools/subscriptions.html`)
+Find forgotten subscriptions hiding in your bank statements. See your true monthly/annual subscription costs and identify charges you might want to cancel.
+
 ## How to use
 
 1. Open `index.html` to see available tools, or go directly to a tool
